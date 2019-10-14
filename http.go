@@ -160,8 +160,8 @@ func httpParseHeaders(headers []byte, obj HTTPMessage) HTTPMessage {
 		direction = "request"
 		method, uri, version = starting_line[0], starting_line[1], starting_line[2]
 	} else if responseLine.MatchString(data[0]) {
-		code, _ := strconv.Atoi(starting_line[1])
-		version, code, message = starting_line[0], code, starting_line[2]
+		httpCode, _ := strconv.Atoi(starting_line[1])
+		version, code, message = starting_line[0], httpCode, starting_line[2]
 		direction = "response"
 	}
 
