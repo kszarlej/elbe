@@ -104,19 +104,25 @@ func proxy(client net.Conn, backend net.Conn, config *Config) {
 		// Get the parsed representation of the response
 		responseParsed := httpRequestParse(response)
 
-		// Run the response pipeline
-		proxySetHeader(&responseParsed, loc.Proxy_set_header)
-
-		// pipeline(responseParsed, loc)
+		// Run the proxy pipeline
+		err = proxy_pipeline(&responseParsed, loc)
 
 		if err != nil {
 			log.Println(err)
+		} else {
+			client.Write(httpMessageSerialize(responseParsed))
 		}
-
-		client.Write(httpMessageSerialize(responseParsed))
 	}
 }
 
-// func pipeline(message HTTPMessage, location *location) (HTTPMessage, error) {
+func proxy_pipeline(message *HTTPMessage, location *Location) error {
+	if len(location.Proxy_set_header) > 0 {
+		proxySetHeader(message, location.Proxy_set_header)
+	}
 
-// }
+	if len(location.Proxy_hide_header) > 0 {
+		proxyHideHeader(message, location.Proxy_hide_header)
+	}
+
+	return nil
+}

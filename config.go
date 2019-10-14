@@ -13,11 +13,12 @@ const (
 var data = `
 locations:
   - prefix: /test
-    proxy_set_header: 
+    proxy_set_header:
+      - Test3 Test3Header
       - Test1 Test1Header
       - Test2 Test2Header
     proxy_hide_header:
-      - Host
+      - Date
   - prefix: /
 `
 

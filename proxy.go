@@ -15,5 +15,7 @@ func proxySetHeader(httpObject *HTTPMessage, headers []string) {
 func proxyHideHeader(httpObject *HTTPMessage, headers []string) {
 	for _, header := range headers {
 		delete(httpObject.eheaders, header)
+		delete(httpObject.rheaders, header)
+		delete(httpObject.gheaders, header)
 	}
 }
