@@ -20,18 +20,9 @@ const (
 	BACKEND_READ_TIMEOUT = time.Second * time.Duration(10)
 )
 
-var (
-	LOCATIONS = []location{
-		location{prefix: "/"},
-		location{
-			prefix:           "/test",
-			proxy_set_header: []header{{"Test", "test header"}, {"Test2", "test header2"}},
-		},
-		location{prefix: "/test/test1/test2"},
-	}
-)
-
 func main() {
+	var config Config = readConfig()
+
 	listener, err := net.Listen("tcp", LISTEN_HOST+":"+LISTEN_PORT)
 	if err != nil {
 		log.Fatal(err)
@@ -47,11 +38,11 @@ func main() {
 
 		backend := initConnect()
 
-		go proxy(conn, backend)
+		go proxy(conn, backend, &config)
 	}
 }
 
-func readRequest(conn net.Conn, timeout time.Duration) ([]byte, error) {
+func readMessage(conn net.Conn, timeout time.Duration) ([]byte, error) {
 	buf := make([]byte, 0, 4096) // TODO LEARN WHAT IS 0
 	tmp := make([]byte, 256)
 
@@ -83,31 +74,40 @@ func initConnect() net.Conn {
 	return conn
 }
 
-func proxy(client net.Conn, backend net.Conn) {
+func proxy(client net.Conn, backend net.Conn, config *Config) {
 	defer backend.Close()
 	defer client.Close()
 
-	request, err := readRequest(client, CLIENT_READ_TIMEOUT)
+	request, err := readMessage(client, CLIENT_READ_TIMEOUT)
 	if err != nil {
 		log.Println(err)
 	}
 
-	httpData := httpRequestParse(request)
+	// Get the parsed representation of the HTTP request
+	httpRequestParsed := httpRequestParse(request)
 
-	if httpData.err != nil {
-		client.Write(HTTP400(&httpData))
+	if httpRequestParsed.err != nil {
+		client.Write(HTTP400(&httpRequestParsed))
 	} else {
-		var loc *location = locationMatcher(LOCATIONS, httpData.uri)
+		// Get the location config
+		var loc *Location = locationMatcher(config.Locations, httpRequestParsed.uri)
 
-		proxyRequest := httpMessageSerialize(httpData)
+		// Serialize the modified request to text format.
+		proxyRequest := httpMessageSerialize(httpRequestParsed)
 
+		// Send request to upstream
 		backend.Write(proxyRequest)
 
-		response, err := readRequest(backend, BACKEND_READ_TIMEOUT)
+		// Read message fro, upstream
+		response, err := readMessage(backend, BACKEND_READ_TIMEOUT)
 
+		// Get the parsed representation of the response
 		responseParsed := httpRequestParse(response)
 
-		proxySetHeader(&responseParsed, loc.proxy_set_header)
+		// Run the response pipeline
+		proxySetHeader(&responseParsed, loc.Proxy_set_header)
+
+		// pipeline(responseParsed, loc)
 
 		if err != nil {
 			log.Println(err)
@@ -116,3 +116,7 @@ func proxy(client net.Conn, backend net.Conn) {
 		client.Write(httpMessageSerialize(responseParsed))
 	}
 }
+
+// func pipeline(message HTTPMessage, location *location) (HTTPMessage, error) {
+
+// }

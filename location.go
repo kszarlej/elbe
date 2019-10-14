@@ -5,19 +5,14 @@ import (
 	"strings"
 )
 
-type location struct {
-	prefix           string
-	proxy_set_header []header
-}
-
-func locationMatcher(locations []location, uri string) *location {
+func locationMatcher(locations []Location, uri string) *Location {
 	var exactMatch bool = false
-	var prefixes []location
-	var matched *location = nil
+	var prefixes []Location
+	var matched *Location = nil
 
 	for _, location := range locations {
 		// If there is an exact match then we use it
-		if location.prefix == uri {
+		if location.Prefix == uri {
 			matched = &location
 			exactMatch = true
 			break
@@ -26,7 +21,7 @@ func locationMatcher(locations []location, uri string) *location {
 		// Build a slice with all locations which are
 		// prefixes to the provided URI. Later on the longest
 		// prefix will be chosen.
-		if strings.HasPrefix(location.prefix, uri) {
+		if strings.HasPrefix(location.Prefix, uri) {
 			prefixes = append(prefixes, location)
 		}
 	}
@@ -44,22 +39,22 @@ func locationMatcher(locations []location, uri string) *location {
 }
 
 // Returns the longest string in slice of strings provided as argument
-func getLocationWithLongestPrefix(locations []location) *location {
+func getLocationWithLongestPrefix(locations []Location) *Location {
 	longest := &locations[0]
-	length := len(locations[0].prefix)
+	length := len(locations[0].Prefix)
 
 	for _, location := range locations {
-		if len(location.prefix) > length {
-			longest, length = &location, len(location.prefix)
+		if len(location.Prefix) > length {
+			longest, length = &location, len(location.Prefix)
 		}
 	}
 
 	return longest
 }
 
-func getRootLocation(locations []location) (*location, error) {
+func getRootLocation(locations []Location) (*Location, error) {
 	for _, location := range locations {
-		if location.prefix == "/" {
+		if location.Prefix == "/" {
 			return &location, nil
 		}
 	}

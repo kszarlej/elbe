@@ -8,6 +8,11 @@ import (
 	"strings"
 )
 
+const (
+	response = "response"
+	request  = "request"
+)
+
 var (
 	generalHeadersList = []string{
 		"Cache-Control",
@@ -126,9 +131,9 @@ func httpSerializeHeaders(headers map[string]string) []byte {
 func httpMessageSerialize(message HTTPMessage) []byte {
 	var serialized []byte
 
-	if message.direction == "request" {
+	if message.direction == request {
 		serialized = []byte(fmt.Sprintf("%s %s %s%s", message.method, message.uri, message.version, CRLF_S))
-	} else if message.direction == "response" {
+	} else if message.direction == response {
 		serialized = []byte(fmt.Sprintf("%s %d %s%s", message.version, message.code, message.message, CRLF_S))
 	}
 
@@ -157,12 +162,12 @@ func httpParseHeaders(headers []byte, obj HTTPMessage) HTTPMessage {
 	var responseLine = regexp.MustCompile(fmt.Sprintf("^%s", httpVersionsRegex()))
 
 	if requestLine.MatchString(data[0]) {
-		direction = "request"
+		direction = request
 		method, uri, version = starting_line[0], starting_line[1], starting_line[2]
 	} else if responseLine.MatchString(data[0]) {
 		httpCode, _ := strconv.Atoi(starting_line[1])
 		version, code, message = starting_line[0], httpCode, starting_line[2]
-		direction = "response"
+		direction = response
 	}
 
 	// range data[1:] to omit the request line parsed above
@@ -218,10 +223,4 @@ func HTTP400(request *HTTPMessage) []byte {
 	}
 
 	return httpMessageSerialize(obj)
-}
-
-func proxySetHeader(httpObject *HTTPMessage, headers []header) {
-	for _, header := range headers {
-		httpObject.eheaders[header.hname] = header.hval
-	}
 }
