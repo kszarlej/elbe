@@ -1,0 +1,13 @@
+version: '2'
+services:
+  backend:
+    image: local/nginxlab
+    entrypoint: nginx -g 'daemon off;' -c /etc/nginx/backend.conf
+    hostname: backend
+    ports:
+    - 8082:8082
+  headersdebugger:
+    image: brndnmtthws/nginx-echo-headers
+    ports:
+    - 8083:8080
+  

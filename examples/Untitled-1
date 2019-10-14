@@ -1,0 +1,39 @@
+package main
+
+import (
+	"fmt"
+	"strings"
+)
+
+func main() {
+	request := []byte{80,79,97,115,100,97,115,100,97,115,100,83,84,32,47,32,72,84,84,80,47,49,46,48,13,10,72,111,115,116,58,32,108,111,99,97,108,104,111,115,116,58,56,48,56,53,13,10,85,115,101,114,45,65,103,101,110,116,58,32,99,117,114,108,47,55,46,53,52,46,48,13,10,65,99,99,101,112,116,58,32,42,47,42,13,10,67,111,110,116,101,110,116,45,76,101,110,103,116,104,58,32,49,49,13,10,67,111,110,116,101,110,116,45,84,121,112,101,58,32,97,112,112,108,105,99,97,116,105,111,110,47,120,45,119,119,119,45,102,111,114,109,45,117,114,108,101,110,99,111,100,101,100,13,10,13,10,99,104,117,106,104,117,106,92,114,92,110}
+        heading := []byte{}
+	body := []byte{}
+
+	full := []byte{65, 65, 13, 10, 13, 10, 66, 66}
+	partial := []byte{65, 65, 13, 10}
+	
+	fmt.Println(string(full))
+	fmt.Println(string(partial))
+	
+	test1 := strings.Split(string(full), string([]byte{13, 10, 13, 10}))
+	test2 := strings.Split(string(partial), string([]byte{13, 10, 13, 10}))
+	fmt.Println(test1)
+	fmt.Println(test2[0])
+	
+	fmt.Println(string(request))
+	
+	index := strings.Index(string(request), string([]byte{13, 10, 13, 10}))
+	
+	heading = request[0:index]
+	body = request[index:len(request)]
+	
+	fmt.Println(heading)
+	fmt.Println(body)
+	
+	
+	
+	
+	
+	
+}
