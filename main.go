@@ -12,12 +12,11 @@ import (
 )
 
 const (
-	LISTEN_HOST          = "localhost"
-	LISTEN_PORT          = "8085"
-	PROXY_PASS_HOST      = "localhost"
-	PROXY_PASS_PORT      = "8082"
-	CLIENT_READ_TIMEOUT  = time.Microsecond * time.Duration(1000)
-	BACKEND_READ_TIMEOUT = time.Second * time.Duration(10)
+	LISTEN_HOST         = "localhost"
+	LISTEN_PORT         = "8085"
+	PROXY_PASS_HOST     = "localhost"
+	PROXY_PASS_PORT     = "8082"
+	CLIENT_READ_TIMEOUT = time.Microsecond * time.Duration(1000)
 )
 
 func main() {
@@ -42,17 +41,20 @@ func main() {
 	}
 }
 
+// readMessage reads a message from socket
 func readMessage(conn net.Conn, timeout time.Duration) ([]byte, error) {
-	buf := make([]byte, 0, 4096) // TODO LEARN WHAT IS 0
+	buf := make([]byte, 0, 4096)
 	tmp := make([]byte, 256)
 
 	for {
 		conn.SetReadDeadline(time.Now().Add(timeout))
 		num, err := conn.Read(tmp)
 		if err != nil {
-			if err != io.EOF {
-				log.Println("Error when reading from connection: ", err)
+			if err == io.EOF {
+				log.Println("EOF")
 			}
+
+			return nil, err
 		}
 
 		if err == io.EOF || num == 0 {
@@ -65,6 +67,12 @@ func readMessage(conn net.Conn, timeout time.Duration) ([]byte, error) {
 	return buf, nil
 }
 
+func writeMessage(conn net.Conn, timeout time.Duration, message []byte) error {
+	conn.SetWriteDeadline(time.Now().Add(timeout))
+	conn.Write(message)
+	return nil
+}
+
 func initConnect() net.Conn {
 	conn, err := net.Dial("tcp", PROXY_PASS_HOST+":"+PROXY_PASS_PORT)
 	if err != nil {
@@ -75,6 +83,8 @@ func initConnect() net.Conn {
 }
 
 func proxy(client net.Conn, backend net.Conn, config *Config) {
+	var loc *Location
+
 	defer backend.Close()
 	defer client.Close()
 
@@ -86,32 +96,40 @@ func proxy(client net.Conn, backend net.Conn, config *Config) {
 	// Get the parsed representation of the HTTP request
 	httpRequestParsed := httpRequestParse(request)
 
+	// Get the location config
+	loc = locationMatcher(config.Locations, httpRequestParsed.uri)
+
 	if httpRequestParsed.err != nil {
 		client.Write(HTTP400(&httpRequestParsed))
+		return
+	}
+
+	// Serialize the modified request to text format which will be sent to Client
+	proxyRequest := httpMessageSerialize(httpRequestParsed)
+
+	// Send request to upstream
+	write_timeout := configGetValue(config, loc, "proxy_write_timeout").(time.Duration)
+	err = writeMessage(backend, write_timeout, proxyRequest)
+
+	// Read message from upstream
+	read_timeout := configGetValue(config, loc, "proxy_read_timeout").(time.Duration)
+	response, err := readMessage(backend, read_timeout)
+
+	if isTimeout(err) {
+		client.Write(HTTP504(&httpRequestParsed))
+		return
+	}
+
+	// Get the parsed representation of the response
+	responseParsed := httpRequestParse(response)
+
+	// Run the proxy pipeline
+	err = proxy_pipeline(&responseParsed, loc)
+
+	if err != nil {
+		log.Println(err)
 	} else {
-		// Get the location config
-		var loc *Location = locationMatcher(config.Locations, httpRequestParsed.uri)
-
-		// Serialize the modified request to text format.
-		proxyRequest := httpMessageSerialize(httpRequestParsed)
-
-		// Send request to upstream
-		backend.Write(proxyRequest)
-
-		// Read message fro, upstream
-		response, err := readMessage(backend, BACKEND_READ_TIMEOUT)
-
-		// Get the parsed representation of the response
-		responseParsed := httpRequestParse(response)
-
-		// Run the proxy pipeline
-		err = proxy_pipeline(&responseParsed, loc)
-
-		if err != nil {
-			log.Println(err)
-		} else {
-			client.Write(httpMessageSerialize(responseParsed))
-		}
+		client.Write(httpMessageSerialize(responseParsed))
 	}
 }
 
@@ -125,4 +143,15 @@ func proxy_pipeline(message *HTTPMessage, location *Location) error {
 	}
 
 	return nil
+}
+
+func isTimeout(err error) bool {
+	switch err := err.(type) {
+	case net.Error:
+		if err, ok := err.(net.Error); ok && err.Timeout() {
+			return true
+		}
+	}
+
+	return false
 }

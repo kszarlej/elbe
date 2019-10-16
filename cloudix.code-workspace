@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "/Users/krzysztof.szarlej/work/prv/test/nginx"
+		},
+		{
+			"path": "/Users/krzysztof.szarlej/work/prv/nginx"
 		}
 	],
 	"settings": {}

@@ -6,6 +6,8 @@ services:
     hostname: backend
     ports:
     - 8082:8082
+    cap_add:
+    - NET_ADMIN
   headersdebugger:
     image: brndnmtthws/nginx-echo-headers
     ports:

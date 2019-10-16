@@ -224,3 +224,23 @@ func HTTP400(request *HTTPMessage) []byte {
 
 	return httpMessageSerialize(obj)
 }
+
+func HTTP504(request *HTTPMessage) []byte {
+	var obj = HTTPMessage{
+		version: (*request).version,
+		message: "Gateway Timeout",
+		body: []byte(`<html>
+<head><title>504 Gateway Timeout</title></head>
+<body>
+<center><h1>504 Gateway Timeout</h1></center>
+<hr><center>elbe</center>
+</body>
+</html>`),
+		code: 504,
+		rheaders: map[string]string{
+			"Connection": "close",
+		},
+	}
+
+	return httpMessageSerialize(obj)
+}
