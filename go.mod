@@ -1,4 +1,4 @@
-module github.com/kszarlej/cloudix
+module github.com/kszarlej/elbe
 
 go 1.13
 
