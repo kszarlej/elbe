@@ -13,8 +13,8 @@ For version 0.1:
 7. Proxy module
     * Support for proxy_add_header - *DONE*
     * Support for proxy_hider_header - *DONE*
-    * Support for proxy_read_timeout
-    * Support for proxy_send_timeout
+    * Support for proxy_read_timeout - *DONE*
+    * Support for proxy_send_timeout - *DONE*
     * Support for proxy_set_body
     * Support for proxy_next_upstream 
     * Support for proxy_set_body
