@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -94,6 +95,7 @@ func httpVersionsRegex() string {
 }
 
 func httpRequestParse(httpData []byte) HTTPMessage {
+	log.Println("httpData: ", string(httpData))
 	var heading []byte
 	var body []byte
 	var obj HTTPMessage
