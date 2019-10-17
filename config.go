@@ -13,8 +13,8 @@ const (
 )
 
 var data = `
-proxy_read_timeout: 5
-proxy_write_timeout: 5
+proxy_read_timeout: 1
+proxy_write_timeout: 10
 locations:
   - prefix: /test
     proxy_set_header:
@@ -23,8 +23,8 @@ locations:
       - Test2 Test2Header
     proxy_hide_header:
       - Date
-    proxy_write_timeout: 5
-    proxy_write_timeout: 5
+    proxy_read_timeout: 10
+    proxy_write_timeout: 1
   - prefix: /
 `
 
