@@ -29,15 +29,21 @@ func main() {
 
 	defer listener.Close()
 
+	// First call initializes the dynamic upstreams before we start the goroutine
+	// that modifies it throughout the elbe lifetime. Removing this first call
+	// might cause `nil` pointer dereference if immediately after program starts
+	// a new connection from client will popup and first iteration of loop in goroutine
+	// won't set the initial upstreams.
+	SetDynamicUpstreams(&config, true)
+	go SetDynamicUpstreams(&config, false)
+
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		backend := initConnect()
-
-		go proxy(conn, backend, &config)
+		go proxy(conn, &config)
 	}
 }
 
@@ -68,13 +74,14 @@ func readMessage(conn net.Conn, timeout time.Duration) ([]byte, error) {
 }
 
 func writeMessage(conn net.Conn, timeout time.Duration, message []byte) error {
+	log.Printf("Writing message %s to %s with timeout %d", message, conn, timeout)
 	conn.SetWriteDeadline(time.Now().Add(timeout))
 	conn.Write(message)
 	return nil
 }
 
-func initConnect() net.Conn {
-	conn, err := net.Dial("tcp", PROXY_PASS_HOST+":"+PROXY_PASS_PORT)
+func initConnect(addr string) net.Conn {
+	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -82,10 +89,9 @@ func initConnect() net.Conn {
 	return conn
 }
 
-func proxy(client net.Conn, backend net.Conn, config *Config) {
+func proxy(client net.Conn, config *Config) {
 	var loc *Location
 
-	defer backend.Close()
 	defer client.Close()
 
 	request, err := readMessage(client, CLIENT_READ_TIMEOUT)
@@ -93,11 +99,23 @@ func proxy(client net.Conn, backend net.Conn, config *Config) {
 		log.Println(err)
 	}
 
+	log.Println("request: ", request)
+
 	// Get the parsed representation of the HTTP request
 	httpRequestParsed := httpRequestParse(request)
+	log.Printf("Parsed: %+v\n", httpRequestParsed)
 
 	// Get the location config
 	loc = locationMatcher(config.Locations, httpRequestParsed.uri)
+
+	upstreamName := configGetValue(config, loc, "proxy_pass")
+	upstreamHost := RoundRobinGetHost(upstreamName.(string))
+
+	log.Println(upstreamHost)
+
+	backend := initConnect(upstreamHost)
+	log.Printf("%+v", loc)
+	defer backend.Close()
 
 	if httpRequestParsed.err != nil {
 		client.Write(HTTP400(&httpRequestParsed))
@@ -106,6 +124,7 @@ func proxy(client net.Conn, backend net.Conn, config *Config) {
 
 	// Serialize the modified request to text format which will be sent to Client
 	proxyRequest := httpMessageSerialize(httpRequestParsed)
+	log.Printf("proxyRequest %s", string(proxyRequest))
 
 	// Send request to upstream
 	write_timeout := configGetValue(config, loc, "proxy_write_timeout").(time.Duration)

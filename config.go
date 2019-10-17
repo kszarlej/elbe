@@ -13,8 +13,13 @@ const (
 )
 
 var data = `
-proxy_read_timeout: 5
-proxy_write_timeout: 5
+proxy_read_timeout: 60
+proxy_write_timeout: 60
+upstreams:
+    floki:
+        hosts:
+        - localhost:9094
+        - localhost:9095
 locations:
   - prefix: /test
     proxy_set_header:
@@ -25,13 +30,20 @@ locations:
       - Date
     proxy_write_timeout: 5
     proxy_write_timeout: 5
+    proxy_pass: floki
   - prefix: /
+    proxy_pass: floki
 `
 
 const (
 	PROXY_READ_TIMEOUT  = 60
 	PROXY_WRITE_TIMEOUT = 60
 )
+
+type Upstream struct {
+	Hosts        []string
+	LoadBalancer *roundrobin
+}
 
 type Location struct {
 	Prefix              string
@@ -40,10 +52,12 @@ type Location struct {
 	Proxy_set_body      string
 	Proxy_read_timeout  int
 	Proxy_write_timeout int
+	Proxy_pass          string
 }
 
 type Config struct {
 	Locations           []Location
+	Upstreams           map[string]Upstream
 	Proxy_read_timeout  int
 	Proxy_write_timeout int
 }
@@ -58,6 +72,8 @@ func readConfig() Config {
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}
+
+	log.Printf("%+v", Cfg)
 
 	return Cfg
 }
@@ -95,6 +111,8 @@ func configGetValue(config *Config, location *Location, directive string) interf
 		} else {
 			return time.Second * time.Duration(location.Proxy_read_timeout)
 		}
+	case "proxy_pass":
+		return location.Proxy_pass
 	default:
 		fmt.Printf("Hello :)")
 	}
