@@ -55,13 +55,6 @@ func readMessage(conn net.Conn, timeout time.Duration) ([]byte, error) {
 	for {
 		conn.SetReadDeadline(time.Now().Add(timeout))
 		num, err := conn.Read(tmp)
-		if err != nil {
-			if err == io.EOF {
-				log.Println("EOF")
-			}
-
-			return nil, err
-		}
 
 		if err == io.EOF || num == 0 {
 			break
@@ -95,6 +88,7 @@ func proxy(client net.Conn, config *Config) {
 	defer client.Close()
 
 	request, err := readMessage(client, CLIENT_READ_TIMEOUT)
+
 	if err != nil {
 		log.Println(err)
 	}
@@ -114,7 +108,7 @@ func proxy(client net.Conn, config *Config) {
 	log.Println(upstreamHost)
 
 	backend := initConnect(upstreamHost)
-	log.Printf("%+v", loc)
+	log.Printf("%+v ", loc)
 	defer backend.Close()
 
 	if httpRequestParsed.err != nil {
@@ -131,8 +125,8 @@ func proxy(client net.Conn, config *Config) {
 	err = writeMessage(backend, write_timeout, proxyRequest)
 
 	// Read message from upstream
-	read_timeout := configGetValue(config, loc, "proxy_read_timeout").(time.Duration)
-	response, err := readMessage(backend, read_timeout)
+	// read_timeout := configGetValue(config, loc, "proxy_read_timeout").(time.Duration)
+	response, err := readMessage(backend, CLIENT_READ_TIMEOUT)
 
 	if isTimeout(err) {
 		client.Write(HTTP504(&httpRequestParsed))
