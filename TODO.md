@@ -3,9 +3,8 @@ For version 0.1:
 1. Basic location
     * Prefixed location choice - *DONE*
 2. Upstreams:
-    * Automatic DNS refreshes
-    * Support retrieving upstreams from Consul
-    * Simple loadbalancing across all Upstreams
+    * Automatic upstreams reloading from config
+    * Simple RoundRobin loadbalancing across all Upstreams  *DONE*
 3. Full HTTP/1.0 and HTTP/1.1 support:
     * Support for POST, HEAD, GET, POST, DELETE, OPTIONS methods
 4. YAML Configuration
@@ -17,4 +16,3 @@ For version 0.1:
     * Support for proxy_send_timeout - *DONE*
     * Support for proxy_set_body
     * Support for proxy_next_upstream 
-    * Support for proxy_set_body
