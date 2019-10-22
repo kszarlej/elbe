@@ -1,4 +1,9 @@
-For version 0.1: 
+# Version 0.2:
+
+1. Properly handle Connection header: https://tools.ietf.org/html/rfc2616#section-14.10
+
+
+# Version 0.1: 
 
 1. Basic location
     * Prefixed location choice - *DONE*
@@ -16,3 +21,4 @@ For version 0.1:
     * Support for proxy_send_timeout - *DONE*
     * Support for proxy_set_body - *DONE*
     * Support for proxy_next_upstream 
+
