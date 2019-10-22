@@ -3,10 +3,12 @@ package main
 import (
 	"errors"
 	"fmt"
-	"log"
+	"io"
+	"net"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -47,6 +49,19 @@ var (
 		"Referer",
 		"TE",
 		"User-Agent",
+	}
+
+	entityHeadersList = []string{
+		"Allow",
+		"Content-Encoding",
+		"Content-Language",
+		"Content-Length",
+		"Content-Location",
+		"Content-MD5",
+		"Content-Range",
+		"Content-Type",
+		"Expires",
+		"Last-Modified",
 	}
 
 	allowedMethods = []string{
@@ -94,31 +109,82 @@ func httpVersionsRegex() string {
 	return fmt.Sprintf("(%s)", strings.Join(httpVersions, "|"))
 }
 
-func httpRequestParse(httpData []byte) HTTPMessage {
-	log.Println("httpData: ", string(httpData))
-	var heading []byte
-	var body []byte
-	var obj HTTPMessage
+//func readMessage(conn net.Conn, timeout time.Duration) ([]byte, error) {
 
-	// Search for first double CRLF occurance.
-	// First occurance separates the HTTP message
-	// headers(+request line) and body.
-	index := strings.Index(string(httpData), string(DOUBLE_CRLF))
+func httpReadMessage(conn net.Conn, timeout time.Duration) HTTPMessage {
+	buf := make([]byte, 0, 4096)
+	tmp := make([]byte, 256)
+	bodytmp := make([]byte, 0, 4096)
 
-	if index == -1 {
-		// HTTP request without body
-		heading = httpData[0:len(httpData)]
-		body = DOUBLE_CRLF
-	} else {
-		// HTTP request with body
-		heading = httpData[0:index]
-		body = httpData[index+4 : len(httpData)]
+	var headers []byte
+	var httpObj HTTPMessage
+
+	// Loop reading from the socket until DOUBLE_CRLF is found
+	// DOUBLE_CRLF splits HTTP Headers from HTTP Body
+	for {
+		conn.SetReadDeadline(time.Now().Add(timeout))
+		num, err := conn.Read(tmp)
+
+		if err == io.EOF || num == 0 {
+			break
+		}
+
+		buf = append(buf, tmp[:num]...)
+
+		index := strings.Index(string(buf), string(DOUBLE_CRLF))
+
+		if index > 0 {
+			headers = buf[0:index]
+			bodytmp = append(bodytmp, buf[index+4:len(buf)]...)
+			break
+		}
+
+		httpObj.err = errors.New("Bad Request")
+		return httpObj
 	}
 
-	obj = httpParseHeaders(heading, obj)
-	obj.body = body
+	// Parse the headers
+	httpObj = httpParseHeaders(headers, httpObj)
+	if httpObj.err != nil {
+		return httpObj
+	}
 
-	return obj
+	// TODO: Learn the "comma ok" idiom
+	// If Content-Length is preset then read the message body
+	// Part of the body was read above when reading headers
+	// so we need to calculate how much of the content is
+	// still left to be read on the socket.
+	if contentLength, headerPresent := httpObj.eheaders["Content-Length"]; headerPresent {
+		contentLength, _ := strconv.Atoi(contentLength)
+		alreadyRead := len(bodytmp)
+
+		body := make([]byte, 0, contentLength)
+		body = append(body, bodytmp...)
+
+		if alreadyRead < contentLength {
+			leftToRead := contentLength - alreadyRead
+
+			// Keep track how many bytes are read
+			readBytes := 0
+
+			for {
+				conn.SetReadDeadline(time.Now().Add(timeout))
+				num, err := conn.Read(tmp)
+
+				readBytes += num
+
+				if err == io.EOF || num == 0 || readBytes >= leftToRead {
+					break
+				}
+
+				body = append(body, tmp[:num]...)
+			}
+		}
+
+		httpObj.body = body
+	}
+
+	return httpObj
 }
 
 func httpSerializeHeaders(headers map[string]string) []byte {
@@ -184,6 +250,10 @@ func httpParseHeaders(headers []byte, obj HTTPMessage) HTTPMessage {
 
 		if StringInSlice(header_name, requestHeadersList) {
 			rheaders[header_name] = header_value
+		}
+
+		if StringInSlice(header_name, entityHeadersList) {
+			eheaders[header_name] = header_value
 		}
 	}
 

@@ -12,7 +12,7 @@ type roundrobin struct {
 	loop *[]string
 }
 
-// Function which reads upstreams from config fi
+// Function which reads upstreams from config file
 // and sets DynamicUpstreams struct used by loadbalancer.
 func SetDynamicUpstreams(config *Config, init bool) {
 	//configUpstreams := config.Upstreams
