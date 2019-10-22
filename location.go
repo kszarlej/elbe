@@ -19,8 +19,7 @@ func locationMatcher(locations []Location, uri string) *Location {
 		}
 
 		// Build a slice with all locations which are
-		// prefixes to the provided URI. Later on the longest
-		// prefix will be chosen.
+		// prefixes to the provided URI.
 		if strings.HasPrefix(location.Prefix, uri) {
 			prefixes = append(prefixes, location)
 		}
@@ -30,7 +29,7 @@ func locationMatcher(locations []Location, uri string) *Location {
 		matched = getLocationWithLongestPrefix(prefixes)
 	}
 
-	// assuming that first location will always be "/"
+	// Assuming first location is always "/"
 	if matched == nil {
 		matched, _ = getRootLocation(locations)
 	}

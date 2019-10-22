@@ -14,5 +14,5 @@ For version 0.1:
     * Support for proxy_hider_header - *DONE*
     * Support for proxy_read_timeout - *DONE*
     * Support for proxy_send_timeout - *DONE*
-    * Support for proxy_set_body
+    * Support for proxy_set_body - *DONE*
     * Support for proxy_next_upstream 

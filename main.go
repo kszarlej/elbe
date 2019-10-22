@@ -77,6 +77,8 @@ func proxy(client net.Conn, config *Config) {
 	// Get the location config
 	loc = locationMatcher(config.Locations, request.uri)
 
+	proxy_request_pipeline(&request, loc)
+
 	upstreamName := configGetValue(config, loc, "proxy_pass")
 	upstreamHost := RoundRobinGetHost(upstreamName.(string))
 
@@ -99,23 +101,26 @@ func proxy(client net.Conn, config *Config) {
 	// 	return
 	// }
 
-	// Run the proxy pipeline
-	err := proxy_pipeline(&response, loc)
+	proxy_response_pipeline(&response, loc)
 
-	if err != nil {
-		log.Println(err)
-	} else {
-		client.Write(httpMessageSerialize(response))
-	}
+	client.Write(httpMessageSerialize(response))
 }
 
-func proxy_pipeline(message *HTTPMessage, location *Location) error {
+func proxy_response_pipeline(message *HTTPMessage, location *Location) error {
 	if len(location.Proxy_set_header) > 0 {
 		proxySetHeader(message, location.Proxy_set_header)
 	}
 
 	if len(location.Proxy_hide_header) > 0 {
 		proxyHideHeader(message, location.Proxy_hide_header)
+	}
+
+	return nil
+}
+
+func proxy_request_pipeline(message *HTTPMessage, location *Location) error {
+	if location.Proxy_set_body != "" {
+		proxySetBody(message, location.Proxy_set_body)
 	}
 
 	return nil

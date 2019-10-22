@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strconv"
 	"strings"
 )
 
@@ -18,4 +19,9 @@ func proxyHideHeader(httpObject *HTTPMessage, headers []string) {
 		delete(httpObject.rheaders, header)
 		delete(httpObject.gheaders, header)
 	}
+}
+
+func proxySetBody(httpObject *HTTPMessage, body string) {
+	httpObject.body = []byte(body)
+	httpObject.eheaders["Content-Length"] = strconv.Itoa(len(body))
 }

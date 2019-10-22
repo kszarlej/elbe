@@ -29,8 +29,9 @@ locations:
     proxy_hide_header:
       - Date
     proxy_write_timeout: 5
-    proxy_write_timeout: 5
+    proxy_read_timeout: 5
     proxy_pass: floki
+    proxy_set_body: test_proxy_set_body
   - prefix: /
     proxy_pass: floki
 `
@@ -38,6 +39,7 @@ locations:
 const (
 	PROXY_READ_TIMEOUT  = 60
 	PROXY_WRITE_TIMEOUT = 60
+	PROXY_SET_BODY      = ""
 )
 
 type Upstream struct {
@@ -72,8 +74,6 @@ func readConfig() Config {
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}
-
-	log.Printf("%+v", Cfg)
 
 	return Cfg
 }
@@ -111,6 +111,8 @@ func configGetValue(config *Config, location *Location, directive string) interf
 		} else {
 			return time.Second * time.Duration(location.Proxy_read_timeout)
 		}
+	case "proxy_set_body":
+		return location.Proxy_set_body
 	case "proxy_pass":
 		return location.Proxy_pass
 	default:
