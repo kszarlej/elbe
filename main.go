@@ -85,12 +85,9 @@ func proxy(client net.Conn, config *Config) {
 	backend := initConnect(upstreamHost)
 	defer backend.Close()
 
-	// Serialize the modified request to text format which will be sent to Client
-	serializedRequest := httpMessageSerialize(request)
-
 	// Send request to upstream
 	write_timeout := configGetValue(config, loc, "proxy_write_timeout").(time.Duration)
-	writeMessage(backend, write_timeout, serializedRequest)
+	writeMessage(backend, write_timeout, request.Serialize())
 
 	// Read message from upstream
 	read_timeout := configGetValue(config, loc, "proxy_read_timeout").(time.Duration)
@@ -103,7 +100,7 @@ func proxy(client net.Conn, config *Config) {
 
 	proxy_response_pipeline(&response, loc)
 
-	client.Write(httpMessageSerialize(response))
+	client.Write(response.Serialize())
 }
 
 func proxy_response_pipeline(message *HTTPMessage, location *Location) error {

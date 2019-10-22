@@ -196,7 +196,7 @@ func httpSerializeHeaders(headers map[string]string) []byte {
 	return serialized
 }
 
-func httpMessageSerialize(message HTTPMessage) []byte {
+func (message HTTPMessage) Serialize() []byte {
 	var serialized []byte
 
 	if message.direction == request {
@@ -294,7 +294,7 @@ func HTTP400(request *HTTPMessage) []byte {
 		},
 	}
 
-	return httpMessageSerialize(obj)
+	return obj.Serialize()
 }
 
 func HTTP504(request *HTTPMessage) []byte {
@@ -314,5 +314,5 @@ func HTTP504(request *HTTPMessage) []byte {
 		},
 	}
 
-	return httpMessageSerialize(obj)
+	return obj.Serialize()
 }
