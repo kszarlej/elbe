@@ -109,8 +109,6 @@ func httpVersionsRegex() string {
 	return fmt.Sprintf("(%s)", strings.Join(httpVersions, "|"))
 }
 
-//func readMessage(conn net.Conn, timeout time.Duration) ([]byte, error) {
-
 func httpReadMessage(conn net.Conn, timeout time.Duration) HTTPMessage {
 	buf := make([]byte, 0, 4096)
 	tmp := make([]byte, 256)
@@ -187,12 +185,20 @@ func httpReadMessage(conn net.Conn, timeout time.Duration) HTTPMessage {
 	return httpObj
 }
 
-func httpSerializeHeaders(headers map[string]string) []byte {
+func (message HTTPMessage) SerializeHeaders() []byte {
 	var serialized []byte
-	for header_name, header_value := range headers {
-		header := []byte(fmt.Sprintf("%s: %s%s", header_name, header_value, CRLF_S))
-		serialized = append(serialized, header[:]...)
+
+	serialize := func(headers map[string]string) {
+		for headerName, headerValue := range headers {
+			h := []byte(fmt.Sprintf("%s: %s%s", headerName, headerValue, CRLF_S))
+			serialized = append(serialized, h[:]...)
+		}
 	}
+
+	serialize(message.gheaders)
+	serialize(message.rheaders)
+	serialize(message.eheaders)
+
 	return serialized
 }
 
@@ -205,9 +211,7 @@ func (message HTTPMessage) Serialize() []byte {
 		serialized = []byte(fmt.Sprintf("%s %d %s%s", message.version, message.code, message.message, CRLF_S))
 	}
 
-	serialized = append(serialized, httpSerializeHeaders(message.gheaders)[:]...)
-	serialized = append(serialized, httpSerializeHeaders(message.rheaders)[:]...)
-	serialized = append(serialized, httpSerializeHeaders(message.eheaders)[:]...)
+	serialized = append(serialized, message.SerializeHeaders()...)
 	serialized = append(serialized, CRLF[:]...)
 	serialized = append(serialized[:], message.body[:]...)
 	return serialized
