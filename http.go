@@ -101,6 +101,38 @@ type header struct {
 	hval  string
 }
 
+func (message HTTPMessage) SerializeHeaders() []byte {
+	var serialized []byte
+
+	serialize := func(headers map[string]string) {
+		for headerName, headerValue := range headers {
+			h := []byte(fmt.Sprintf("%s: %s%s", headerName, headerValue, CRLF_S))
+			serialized = append(serialized, h[:]...)
+		}
+	}
+
+	serialize(message.gheaders)
+	serialize(message.rheaders)
+	serialize(message.eheaders)
+
+	return serialized
+}
+
+func (message HTTPMessage) Serialize() []byte {
+	var serialized []byte
+
+	if message.direction == request {
+		serialized = []byte(fmt.Sprintf("%s %s %s%s", message.method, message.uri, message.version, CRLF_S))
+	} else if message.direction == response {
+		serialized = []byte(fmt.Sprintf("%s %d %s%s", message.version, message.code, message.message, CRLF_S))
+	}
+
+	serialized = append(serialized, message.SerializeHeaders()...)
+	serialized = append(serialized, CRLF[:]...)
+	serialized = append(serialized[:], message.body[:]...)
+	return serialized
+}
+
 func allowedMethodsRegex() string {
 	return fmt.Sprintf("(%s)", strings.Join(allowedMethods, "|"))
 }
@@ -183,38 +215,6 @@ func httpReadMessage(conn net.Conn, timeout time.Duration) HTTPMessage {
 	}
 
 	return httpObj
-}
-
-func (message HTTPMessage) SerializeHeaders() []byte {
-	var serialized []byte
-
-	serialize := func(headers map[string]string) {
-		for headerName, headerValue := range headers {
-			h := []byte(fmt.Sprintf("%s: %s%s", headerName, headerValue, CRLF_S))
-			serialized = append(serialized, h[:]...)
-		}
-	}
-
-	serialize(message.gheaders)
-	serialize(message.rheaders)
-	serialize(message.eheaders)
-
-	return serialized
-}
-
-func (message HTTPMessage) Serialize() []byte {
-	var serialized []byte
-
-	if message.direction == request {
-		serialized = []byte(fmt.Sprintf("%s %s %s%s", message.method, message.uri, message.version, CRLF_S))
-	} else if message.direction == response {
-		serialized = []byte(fmt.Sprintf("%s %d %s%s", message.version, message.code, message.message, CRLF_S))
-	}
-
-	serialized = append(serialized, message.SerializeHeaders()...)
-	serialized = append(serialized, CRLF[:]...)
-	serialized = append(serialized[:], message.body[:]...)
-	return serialized
 }
 
 func httpParseHeaders(headers []byte, obj HTTPMessage) HTTPMessage {

@@ -32,6 +32,9 @@ locations:
     proxy_read_timeout: 5
     proxy_pass: floki
     proxy_set_body: test_proxy_set_body
+    auth:
+        type: basic 
+        passwdfile: credentials
   - prefix: /
     proxy_pass: floki
 `
@@ -47,6 +50,11 @@ type Upstream struct {
 	LoadBalancer *roundrobin
 }
 
+type AuthConfig struct {
+	AuthType   string `yaml:"type"`
+	Passwdfile string
+}
+
 type Location struct {
 	Prefix              string
 	Proxy_set_header    []string
@@ -55,6 +63,8 @@ type Location struct {
 	Proxy_read_timeout  int
 	Proxy_write_timeout int
 	Proxy_pass          string
+	Auth                AuthConfig
+	BasicAuthUsers      *[]BasicAuthUser
 }
 
 type Config struct {
