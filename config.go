@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"io/ioutil"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 )
@@ -34,7 +36,7 @@ locations:
     proxy_set_body: test_proxy_set_body
     auth:
         type: basic 
-        passwdfile: credentials
+        passwdfile: credentials_bcrypt
   - prefix: /
     proxy_pass: floki
 `
@@ -50,11 +52,6 @@ type Upstream struct {
 	LoadBalancer *roundrobin
 }
 
-type AuthConfig struct {
-	AuthType   string `yaml:"type"`
-	Passwdfile string
-}
-
 type Location struct {
 	Prefix              string
 	Proxy_set_header    []string
@@ -64,7 +61,6 @@ type Location struct {
 	Proxy_write_timeout int
 	Proxy_pass          string
 	Auth                AuthConfig
-	BasicAuthUsers      *[]BasicAuthUser
 }
 
 type Config struct {
@@ -74,18 +70,46 @@ type Config struct {
 	Proxy_write_timeout int
 }
 
-func readConfig() Config {
-	Cfg := Config{}
-	err := yaml.Unmarshal([]byte(data), &Cfg)
 
-	configSetDefault(&Cfg.Proxy_read_timeout, PROXY_READ_TIMEOUT)
-	configSetDefault(&Cfg.Proxy_write_timeout, PROXY_WRITE_TIMEOUT)
+func (ac AuthConfig) loadPasswdFile() {
+	// TODO: Make sure that it wont be possible to crash the program
+	// by supplying superbig credentials file.
+	var bausers = make(map[string]string)
+
+	contents, _ := ioutil.ReadFile(ac.Passwdfile)
+	entries := strings.Split(string(contents), "\n")
+
+	for _, e := range entries {
+		user := strings.Split(e, ":")
+		bausers[user[0]] = user[1]
+	}
+
+	ac.BasicAuthUsers = bausers
+}
+
+// Iterates locations and loads loadPasswdFile on each AuthType 
+func (c Config) loadAuth() {
+	for _, l := range c.Locations {
+		if l.Auth.AuthType == "basic" && l.Auth.Passwdfile != "" {
+			l.Auth.loadPasswdFile()
+		}
+	}
+}
+
+func readConfig() Config {
+	cfg := Config{}
+	err := yaml.Unmarshal([]byte(data), &cfg)
+
+	configSetDefault(&cfg.Proxy_read_timeout, PROXY_READ_TIMEOUT)
+	configSetDefault(&cfg.Proxy_write_timeout, PROXY_WRITE_TIMEOUT)
 
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}
 
-	return Cfg
+	cfg.loadAuth()
+
+	return cfg
 }
 
 // Sets default values for config directives if they are not specified
@@ -107,6 +131,7 @@ func configSetDefault(directive interface{}, value interface{}) {
 	}
 }
 
+// TODO: Switch to method on Config object
 func configGetValue(config *Config, location *Location, directive string) interface{} {
 	switch directive {
 	case "proxy_write_timeout":

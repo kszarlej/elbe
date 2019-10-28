@@ -123,13 +123,15 @@ func (message HTTPMessage) Serialize() []byte {
 
 	if message.direction == request {
 		serialized = []byte(fmt.Sprintf("%s %s %s%s", message.method, message.uri, message.version, CRLF_S))
-	} else if message.direction == response {
+	} else {
+		message.eheaders["Content-Length"] = strconv.Itoa(len(message.body))
 		serialized = []byte(fmt.Sprintf("%s %d %s%s", message.version, message.code, message.message, CRLF_S))
 	}
 
 	serialized = append(serialized, message.SerializeHeaders()...)
 	serialized = append(serialized, CRLF[:]...)
 	serialized = append(serialized[:], message.body[:]...)
+
 	return serialized
 }
 
@@ -298,6 +300,29 @@ func HTTP400(request *HTTPMessage) []byte {
 		},
 	}
 
+	return obj.Serialize()
+}
+
+func HTTP401(request *HTTPMessage) []byte {
+	var obj = HTTPMessage{
+		version: (*request).version,
+		message: "Authorization Required",
+		body: []byte(`<html>
+<head><title>401 Authorization Required</title></head>
+<body>
+<center><h1>401 Authorization Required</h1></center>
+<hr><center>elbe</center>
+</body>
+</html>`),
+		code: 401,
+		rheaders: map[string]string{
+			"Connection": "keep-alive",
+		},
+		eheaders: map[string]string{
+			"Content-Type": "text/html",
+			"WWW-Authenticate": "Basic realm=\"restricted\"",
+		},
+	}
 	return obj.Serialize()
 }
 

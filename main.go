@@ -8,6 +8,7 @@ import (
 	// "bufio"
 
 	"time"
+	"fmt"
 )
 
 const (
@@ -76,6 +77,15 @@ func proxy(client net.Conn, config *Config) {
 
 	// Get the location config
 	loc = locationMatcher(config.Locations, request.uri)
+
+	if loc.Auth.AuthType == "basic" {
+		_, err := loc.Auth.Authenticate(request.rheaders["Authorization"])
+		fmt.Printf("%v", err)
+		if (err != nil && ! err.(*authError).HeaderPresent()) {
+			client.Write(HTTP401(&request))
+			return
+		}
+	}
 
 	proxy_request_pipeline(&request, loc)
 
