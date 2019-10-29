@@ -150,6 +150,7 @@ func httpReadMessage(conn net.Conn, timeout time.Duration) HTTPMessage {
 
 	var headers []byte
 	var httpObj HTTPMessage
+	var headersRead bool
 
 	// Loop reading from the socket until DOUBLE_CRLF is found
 	// DOUBLE_CRLF splits HTTP Headers from HTTP Body
@@ -168,9 +169,14 @@ func httpReadMessage(conn net.Conn, timeout time.Duration) HTTPMessage {
 		if index > 0 {
 			headers = buf[0:index]
 			bodytmp = append(bodytmp, buf[index+4:len(buf)]...)
+			headersRead = true
 			break
+		} else {
+			continue
 		}
+	}
 
+	if ! headersRead {
 		httpObj.err = errors.New("Bad Request")
 		return httpObj
 	}

@@ -1,7 +1,8 @@
 # Version 0.2:
 
 1. Properly handle Connection header: https://tools.ietf.org/html/rfc2616#section-14.10
-
+2. Implement 413 Entity Too Large when headers exceed 8K
+3. Implement 414 Request-URI Too Large
 
 # Version 0.1: 
 
