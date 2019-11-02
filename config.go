@@ -70,28 +70,24 @@ type Config struct {
 	Proxy_write_timeout int
 }
 
-
-func (ac AuthConfig) loadPasswdFile() {
-	// TODO: Make sure that it wont be possible to crash the program
-	// by supplying superbig credentials file.
-	var bausers = make(map[string]string)
-
-	contents, _ := ioutil.ReadFile(ac.Passwdfile)
-	entries := strings.Split(string(contents), "\n")
-
-	for _, e := range entries {
-		user := strings.Split(e, ":")
-		bausers[user[0]] = user[1]
-	}
-
-	ac.BasicAuthUsers = bausers
-}
-
 // Iterates locations and loads loadPasswdFile on each AuthType 
-func (c Config) loadAuth() {
-	for _, l := range c.Locations {
+func (c *Config) loadAuth() {
+	for idx, l := range c.Locations {
+		// Fix check l.Auth.Passwdfile check
 		if l.Auth.AuthType == "basic" && l.Auth.Passwdfile != "" {
-			l.Auth.loadPasswdFile()
+			var bausers = make(map[string]string)
+
+			contents, _ := ioutil.ReadFile(l.Auth.Passwdfile)
+			entries := strings.Split(string(contents), "\n")
+
+			for _, e := range entries {
+				user := strings.Split(e, ":")
+				bausers[user[0]] = user[1]
+			}
+
+			// TODO: why commented one doesn't work
+			//l.Auth.BasicAuthUsers = bausers
+			c.Locations[idx].Auth.BasicAuthUsers = bausers
 		}
 	}
 }

@@ -26,7 +26,7 @@ type AuthConfig struct {
 	BasicAuthUsers map[string]string
 }
 
-func (ac AuthConfig) Authenticate(authorizationHeader string) (bool, error) {
+func (ac *AuthConfig) Authenticate(authorizationHeader string) (bool, error) {
 	if authorizationHeader == "" {
 		return false, &authError{err: "Authorization required", header: false}
 	}

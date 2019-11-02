@@ -65,8 +65,6 @@ func initConnect(addr string) net.Conn {
 }
 
 func proxy(client net.Conn, config *Config) {
-	var loc *Location
-
 	defer client.Close()
 
 	request := httpReadMessage(client, CLIENT_READ_TIMEOUT)
@@ -76,7 +74,7 @@ func proxy(client net.Conn, config *Config) {
 	}
 
 	// Get the location config
-	loc = locationMatcher(config.Locations, request.uri)
+	loc := locationMatcher(config.Locations, request.uri)
 
 	if loc.Auth.AuthType == "basic" {
 		_, err := loc.Auth.Authenticate(request.rheaders["Authorization"])
