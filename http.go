@@ -244,7 +244,7 @@ func httpReadMessage(conn net.Conn, timeout time.Duration) HTTPMessage {
 
 				body = append(body, tmp[:num]...)
 
-				if shouldBreak == true {
+				if shouldBreak {
 					break
 				}
 			}
@@ -274,10 +274,10 @@ func httpParseHeaders(headers []byte, obj HTTPMessage) HTTPMessage {
 
 	if requestLine.MatchString(data[0]) {
 		direction = request
-		method, uri, version = starting_line[0], starting_line[1], starting_line[2]
+		method, uri, version = starting_line[0], starting_line[1], strings.Join(starting_line[2:], " ")
 	} else if responseLine.MatchString(data[0]) {
 		httpCode, _ := strconv.Atoi(starting_line[1])
-		version, code, message = starting_line[0], httpCode, starting_line[2]
+		version, code, message = starting_line[0], httpCode, strings.Join(starting_line[2:], " ")
 		direction = response
 	}
 

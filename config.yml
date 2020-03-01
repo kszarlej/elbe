@@ -26,3 +26,4 @@ locations:
     - TestHeader TestHeaderValue
     proxy_hide_header:
       - Date
+    proxy_set_body: test_proxy_set_body
