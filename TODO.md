@@ -14,7 +14,7 @@
 3. Full HTTP/1.0 and HTTP/1.1 support:
     * Support for POST, HEAD, GET, POST, DELETE, OPTIONS methods
 4. YAML Configuration
-6. Support for Basic Authorization
+6. Support for Basic Authorization - *DONE*
 7. Proxy module
     * Support for proxy_add_header - *DONE*
     * Support for proxy_hider_header - *DONE*
