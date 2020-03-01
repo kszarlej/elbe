@@ -128,24 +128,29 @@ func configSetDefault(directive interface{}, value interface{}) {
 }
 
 // TODO: Switch to method on Config object
-func configGetValue(config *Config, location *Location, directive string) interface{} {
+func (c *Config) Get(location *Location, directive string) interface{} {
 	switch directive {
+
 	case "proxy_write_timeout":
 		if location.Proxy_write_timeout == 0 {
-			return time.Second * time.Duration(config.Proxy_write_timeout)
+			return time.Second * time.Duration(c.Proxy_write_timeout)
 		} else {
 			return time.Second * time.Duration(location.Proxy_write_timeout)
 		}
+	
 	case "proxy_read_timeout":
 		if location.Proxy_read_timeout == 0 {
-			return time.Second * time.Duration(config.Proxy_read_timeout)
+			return time.Second * time.Duration(c.Proxy_read_timeout)
 		} else {
 			return time.Second * time.Duration(location.Proxy_read_timeout)
 		}
+	
 	case "proxy_set_body":
 		return location.Proxy_set_body
+	
 	case "proxy_pass":
 		return location.Proxy_pass
+
 	default:
 		fmt.Printf("Hello :)")
 	}

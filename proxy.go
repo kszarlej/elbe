@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// TODO: Optimalize it (remove unneeded Split/Join)
+// TODO: Optimize it (remove unneeded Split/Join)
 func proxySetHeader(httpObject *HTTPMessage, headers []string) {
 	for _, header := range headers {
 		header := strings.Split(header, " ")

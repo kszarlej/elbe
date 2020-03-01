@@ -94,6 +94,12 @@ type HTTPMessage struct {
 	err       error
 	code      int
 	message   string
+	
+	// Fields used internally for execution control
+	authenticated bool
+	proxy_auth_pipeline_error error
+	proxy_request_pipeline_error error
+	proxy_response_pipeline_error error
 }
 
 type header struct {
@@ -202,20 +208,25 @@ func httpReadMessage(conn net.Conn, timeout time.Duration) HTTPMessage {
 		if alreadyRead < contentLength {
 			leftToRead := contentLength - alreadyRead
 
-			// Keep track how many bytes are read
+			// Keep track how many bytes are read and when to break
 			readBytes := 0
+			shouldBreak := false
 
 			for {
 				conn.SetReadDeadline(time.Now().Add(timeout))
 				num, err := conn.Read(tmp)
-
+				fmt.Println(readBytes)
 				readBytes += num
 
 				if err == io.EOF || num == 0 || readBytes >= leftToRead {
-					break
+					shouldBreak = true
 				}
 
 				body = append(body, tmp[:num]...)
+
+				if shouldBreak == true {
+					break
+				}
 			}
 		}
 
@@ -303,7 +314,8 @@ func HTTP400(request *HTTPMessage) []byte {
 		code: 400,
 		rheaders: map[string]string{
 			"Connection": "close",
-		},
+		}, 
+		eheaders: map[string]string{},
 	}
 
 	return obj.Serialize()

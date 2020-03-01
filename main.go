@@ -8,7 +8,7 @@ import (
 	// "bufio"
 
 	"time"
-	"fmt"
+	// "fmt"
 )
 
 const (
@@ -76,29 +76,27 @@ func proxy(client net.Conn, config *Config) {
 	// Get the location config
 	loc := locationMatcher(config.Locations, request.uri)
 
-	if loc.Auth.AuthType == "basic" {
-		_, err := loc.Auth.Authenticate(request.rheaders["Authorization"])
-		fmt.Printf("%v", err)
-		if (err != nil && ! err.(*authError).HeaderPresent()) {
-			client.Write(HTTP401(&request))
-			return
-		}
-	}
-
+	proxy_auth_pipeline(&request, loc)
 	proxy_request_pipeline(&request, loc)
 
-	upstreamName := configGetValue(config, loc, "proxy_pass")
+	if request.authenticated != true {
+		client.Write(HTTP401(&request))
+		return
+	}
+
+	// Get proxy host
+	upstreamName := config.Get(loc, "proxy_pass")
 	upstreamHost := RoundRobinGetHost(upstreamName.(string))
 
 	backend := initConnect(upstreamHost)
 	defer backend.Close()
 
 	// Send request to upstream
-	write_timeout := configGetValue(config, loc, "proxy_write_timeout").(time.Duration)
+	write_timeout := config.Get(loc, "proxy_write_timeout").(time.Duration)
 	writeMessage(backend, write_timeout, request.Serialize())
 
 	// Read message from upstream
-	read_timeout := configGetValue(config, loc, "proxy_read_timeout").(time.Duration)
+	read_timeout := config.Get(loc, "proxy_read_timeout").(time.Duration)
 	response := httpReadMessage(backend, read_timeout)
 
 	// if isTimeout(err) {
@@ -111,7 +109,7 @@ func proxy(client net.Conn, config *Config) {
 	client.Write(response.Serialize())
 }
 
-func proxy_response_pipeline(message *HTTPMessage, location *Location) error {
+func proxy_response_pipeline(message *HTTPMessage, location *Location) {
 	if len(location.Proxy_set_header) > 0 {
 		proxySetHeader(message, location.Proxy_set_header)
 	}
@@ -119,16 +117,29 @@ func proxy_response_pipeline(message *HTTPMessage, location *Location) error {
 	if len(location.Proxy_hide_header) > 0 {
 		proxyHideHeader(message, location.Proxy_hide_header)
 	}
-
-	return nil
 }
 
-func proxy_request_pipeline(message *HTTPMessage, location *Location) error {
+func proxy_request_pipeline(message *HTTPMessage, location *Location) {
 	if location.Proxy_set_body != "" {
 		proxySetBody(message, location.Proxy_set_body)
 	}
+}
 
-	return nil
+// proxy_auth_pipeline checks if the request should be authenticated and present the challenge if needed.
+func proxy_auth_pipeline(message *HTTPMessage, loc *Location) {
+
+	switch loc.Auth.AuthType {
+	case "basic":
+		err := loc.Auth.Authenticate(message.rheaders["Authorization"])
+
+		if err != nil {
+			message.authenticated = false
+		}
+
+	default:
+		message.authenticated = true
+	}
+
 }
 
 func isTimeout(err error) bool {

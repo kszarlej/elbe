@@ -1,7 +1,8 @@
 version: '2'
 services:
   backend1:
-    image: local/nginxlab
+    build: 
+      context: .
     entrypoint: nginx -g 'daemon off;' -c /etc/nginx/backend.conf
     hostname: backend1
     ports:
@@ -9,7 +10,8 @@ services:
     cap_add:
     - NET_ADMIN
   backend2:
-    image: local/nginxlab
+    build: 
+      context: .
     entrypoint: nginx -g 'daemon off;' -c /etc/nginx/backend.conf
     hostname: backend2
     ports:

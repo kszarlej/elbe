@@ -5,20 +5,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"strings"
 	"encoding/base64"
+	"errors"
 )
-
-type authError struct {
-	err string
-	header bool
-}
-
-func (e *authError) Error() string {
-	return e.err
-}
-
-func (e *authError) HeaderPresent() bool {
-	return e.header
-}
 
 type AuthConfig struct {
 	AuthType   	   string `yaml:"type"`
@@ -26,9 +14,11 @@ type AuthConfig struct {
 	BasicAuthUsers map[string]string
 }
 
-func (ac *AuthConfig) Authenticate(authorizationHeader string) (bool, error) {
+// Authenticate receives the Authorization header content. Extracts the username/password
+// and compares it to the password from AuthConfig for location.
+func (ac *AuthConfig) Authenticate(authorizationHeader string) error {
 	if authorizationHeader == "" {
-		return false, &authError{err: "Authorization required", header: false}
+		return errors.New("No authorization header")
 	}
 
 	hash := strings.Split(authorizationHeader, " ")
@@ -44,7 +34,7 @@ func (ac *AuthConfig) Authenticate(authorizationHeader string) (bool, error) {
 	err = bcrypt.CompareHashAndPassword([]byte(ac.BasicAuthUsers[username]), []byte(password))
 
 	if err != nil {
-		return false, &authError{err: "Bad credentials", header: false}
+		return errors.New("Wrong credentials")
 	}
-	return true, nil
+	return nil
 }
