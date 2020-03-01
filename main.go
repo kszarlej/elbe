@@ -3,12 +3,7 @@ package main
 import (
 	"log"
 	"net"
-
-	// "io"
-	// "bufio"
-
 	"time"
-	// "fmt"
 )
 
 const (
@@ -111,17 +106,17 @@ func proxy(client net.Conn, config *Config) {
 
 func proxy_response_pipeline(message *HTTPMessage, location *Location) {
 	if len(location.Proxy_set_header) > 0 {
-		proxySetHeader(message, location.Proxy_set_header)
+		message.SetHeaders(location.Proxy_set_header)
 	}
 
 	if len(location.Proxy_hide_header) > 0 {
-		proxyHideHeader(message, location.Proxy_hide_header)
+		message.HideHeaders(location.Proxy_hide_header)
 	}
 }
 
 func proxy_request_pipeline(message *HTTPMessage, location *Location) {
 	if location.Proxy_set_body != "" {
-		proxySetBody(message, location.Proxy_set_body)
+		message.SetBody(location.Proxy_set_body)
 	}
 }
 

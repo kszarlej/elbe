@@ -107,6 +107,26 @@ type header struct {
 	hval  string
 }
 
+func (message *HTTPMessage) SetHeaders(headers []string) {
+	for _, header := range headers {
+		header := strings.Split(header, " ")
+		message.eheaders[header[0]] = strings.Join(header[1:], " ")
+	}
+}
+
+func (message *HTTPMessage) HideHeaders(headers []string) {
+	for _, header := range headers {
+		delete(message.eheaders, header)
+		delete(message.rheaders, header)
+		delete(message.gheaders, header)
+	}
+}
+
+func (message *HTTPMessage) SetBody(body string) {
+	message.body = []byte(body)
+	message.eheaders["Content-Length"] = strconv.Itoa(len(body))
+}
+
 func (message HTTPMessage) SerializeHeaders() []byte {
 	var serialized []byte
 
@@ -215,7 +235,7 @@ func httpReadMessage(conn net.Conn, timeout time.Duration) HTTPMessage {
 			for {
 				conn.SetReadDeadline(time.Now().Add(timeout))
 				num, err := conn.Read(tmp)
-				fmt.Println(readBytes)
+
 				readBytes += num
 
 				if err == io.EOF || num == 0 || readBytes >= leftToRead {

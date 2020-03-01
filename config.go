@@ -10,38 +10,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const (
-	CONFIG_PATH = "config.yml"
-)
-
-var data = `
-proxy_read_timeout: 60
-proxy_write_timeout: 60
-upstreams:
-    floki:
-        hosts:
-        - localhost:9094
-        - localhost:9095
-locations:
-  - prefix: /test
-    proxy_set_header:
-      - Test3 Test3Header
-      - Test1 Test1Header
-      - Test2 Test2Header
-    proxy_hide_header:
-      - Date
-    proxy_write_timeout: 5
-    proxy_read_timeout: 5
-    proxy_pass: floki
-    proxy_set_body: test_proxy_set_body
-    auth:
-        type: basic 
-        passwdfile: credentials_bcrypt
-  - prefix: /
-    proxy_pass: floki
-`
-
-const (
+var (
+	CONFIG_PATH         = "config.yml"
 	PROXY_READ_TIMEOUT  = 60
 	PROXY_WRITE_TIMEOUT = 60
 	PROXY_SET_BODY      = ""
@@ -93,8 +63,13 @@ func (c *Config) loadAuth() {
 }
 
 func readConfig() Config {
+	configFile, err := ioutil.ReadFile("config.yml")
+	if err != nil {
+		panic("Error reading config file")
+	}
+
 	cfg := Config{}
-	err := yaml.Unmarshal([]byte(data), &cfg)
+	err = yaml.Unmarshal(configFile, &cfg)
 
 	configSetDefault(&cfg.Proxy_read_timeout, PROXY_READ_TIMEOUT)
 	configSetDefault(&cfg.Proxy_write_timeout, PROXY_WRITE_TIMEOUT)
