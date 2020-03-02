@@ -13,7 +13,7 @@ import (
 
 const (
 	DIRECTION_DOWNSTREAM = "downstream"
-	DIRECTION_UPSTREAM  = "upstream"
+	DIRECTION_UPSTREAM   = "upstream"
 )
 
 var (
@@ -94,11 +94,11 @@ type HTTPMessage struct {
 	err       error
 	code      int
 	message   string
-	
+
 	// Fields used internally for execution control
-	authenticated bool
-	proxy_auth_pipeline_error error
-	proxy_request_pipeline_error error
+	authenticated                 bool
+	proxy_auth_pipeline_error     error
+	proxy_request_pipeline_error  error
 	proxy_response_pipeline_error error
 }
 
@@ -205,7 +205,7 @@ func httpReadMessage(conn net.Conn, timeout time.Duration) HTTPMessage {
 		}
 	}
 
-	if ! headersRead {
+	if !headersRead {
 		httpObj.err = errors.New("Bad Request")
 		return httpObj
 	}
@@ -338,7 +338,7 @@ func HTTP400(request *HTTPMessage) []byte {
 		code: 400,
 		rheaders: map[string]string{
 			"Connection": "close",
-		}, 
+		},
 		eheaders: map[string]string{},
 	}
 
@@ -361,7 +361,7 @@ func HTTP401(request *HTTPMessage) []byte {
 			"Connection": "keep-alive",
 		},
 		eheaders: map[string]string{
-			"Content-Type": "text/html",
+			"Content-Type":     "text/html",
 			"WWW-Authenticate": "Basic realm=\"restricted\"",
 		},
 	}

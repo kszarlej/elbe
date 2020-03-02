@@ -1,16 +1,16 @@
 package main
 
 import (
+	"encoding/base64"
+	"errors"
 	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"strings"
-	"encoding/base64"
-	"errors"
 )
 
 type AuthConfig struct {
-	AuthType   	   string `yaml:"type"`
-	Passwdfile 	   string
+	AuthType       string `yaml:"type"`
+	Passwdfile     string
 	BasicAuthUsers map[string]string
 }
 
@@ -26,7 +26,7 @@ func (ac *AuthConfig) Authenticate(authorizationHeader string) error {
 	if err != nil {
 		fmt.Println(err)
 	}
-	
+
 	creds := strings.Split(string(decoded), ":")
 	username := creds[0]
 	password := creds[1]

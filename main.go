@@ -126,7 +126,7 @@ func proxy_response_pipeline(message *HTTPMessage, location *Location) {
 		err = message.HideHeaders(location.Proxy_hide_header)
 	}
 
-	if (err != nil) {
+	if err != nil {
 		message.err = err
 	}
 }
@@ -138,7 +138,7 @@ func proxy_request_pipeline(message *HTTPMessage, location *Location) {
 		err = message.SetBody(location.Proxy_set_body)
 	}
 
-	if (err != nil) {
+	if err != nil {
 		message.err = err
 	}
 }

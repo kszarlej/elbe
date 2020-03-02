@@ -26,7 +26,6 @@ func (lb *LoadBalancer) GetHost() string {
 	return (*lb.loop)[hostNum]
 }
 
-
 // SetDynamicUpstreams is function which reads upstreams from config file
 // and sets DynamicUpstreams struct used by loadbalancer.
 func SetDynamicUpstreams(config *Config, init bool) {

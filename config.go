@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"time"
 	"io/ioutil"
+	"log"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v2"
 )
@@ -40,7 +40,7 @@ type Config struct {
 	Proxy_write_timeout int
 }
 
-// Iterates locations and loads loadPasswdFile on each AuthType 
+// Iterates locations and loads loadPasswdFile on each AuthType
 func (c *Config) loadAuth() {
 	for idx, l := range c.Locations {
 		// Fix check l.Auth.Passwdfile check
@@ -112,17 +112,17 @@ func (c *Config) Get(location *Location, directive string) interface{} {
 		} else {
 			return time.Second * time.Duration(location.Proxy_write_timeout)
 		}
-	
+
 	case "proxy_read_timeout":
 		if location.Proxy_read_timeout == 0 {
 			return time.Second * time.Duration(c.Proxy_read_timeout)
 		} else {
 			return time.Second * time.Duration(location.Proxy_read_timeout)
 		}
-	
+
 	case "proxy_set_body":
 		return location.Proxy_set_body
-	
+
 	case "proxy_pass":
 		return location.Proxy_pass
 
