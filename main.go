@@ -106,6 +106,11 @@ func proxy(client net.Conn, config *Config) {
 
 	proxy_response_pipeline(&response, loc)
 
+	if response.err != nil {
+		client.Write(HTTP400(&response))
+		return
+	}
+
 	client.Write(response.Serialize())
 }
 

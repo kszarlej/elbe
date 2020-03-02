@@ -217,7 +217,7 @@ func httpReadMessage(conn net.Conn, timeout time.Duration) HTTPMessage {
 	}
 
 	// TODO: Learn the "comma ok" idiom
-	// If Content-Length is preset then read the message body
+	// If Content-Length is present then read the message body
 	// Part of the body was read above when reading headers
 	// so we need to calculate how much of the content is
 	// still left to be read on the socket.
