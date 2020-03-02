@@ -79,6 +79,11 @@ func proxy(client net.Conn, config *Config) {
 		return
 	}
 
+	if request.err != nil {
+		client.Write(HTTP400(&request))
+		return
+	}
+
 	// Get proxy host
 	upstreamName := config.Get(loc, "proxy_pass")
 	upstreamHost := RoundRobinGetHost(upstreamName.(string))
@@ -105,18 +110,30 @@ func proxy(client net.Conn, config *Config) {
 }
 
 func proxy_response_pipeline(message *HTTPMessage, location *Location) {
+	var err error = nil
+
 	if len(location.Proxy_set_header) > 0 {
-		message.SetHeaders(location.Proxy_set_header)
+		err = message.SetHeaders(location.Proxy_set_header)
 	}
 
 	if len(location.Proxy_hide_header) > 0 {
-		message.HideHeaders(location.Proxy_hide_header)
+		err = message.HideHeaders(location.Proxy_hide_header)
+	}
+
+	if (err != nil) {
+		message.err = err
 	}
 }
 
 func proxy_request_pipeline(message *HTTPMessage, location *Location) {
+	var err error = nil
+
 	if location.Proxy_set_body != "" {
-		message.SetBody(location.Proxy_set_body)
+		err = message.SetBody(location.Proxy_set_body)
+	}
+
+	if (err != nil) {
+		message.err = err
 	}
 }
 

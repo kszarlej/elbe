@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	response = "response"
-	request  = "request"
+	DIRECTION_DOWNSTREAM = "downstream"
+	DIRECTION_UPSTREAM  = "upstream"
 )
 
 var (
@@ -107,24 +107,27 @@ type header struct {
 	hval  string
 }
 
-func (message *HTTPMessage) SetHeaders(headers []string) {
+func (message *HTTPMessage) SetHeaders(headers []string) error {
 	for _, header := range headers {
 		header := strings.Split(header, " ")
 		message.eheaders[header[0]] = strings.Join(header[1:], " ")
 	}
+	return nil
 }
 
-func (message *HTTPMessage) HideHeaders(headers []string) {
+func (message *HTTPMessage) HideHeaders(headers []string) error {
 	for _, header := range headers {
 		delete(message.eheaders, header)
 		delete(message.rheaders, header)
 		delete(message.gheaders, header)
 	}
+	return nil
 }
 
-func (message *HTTPMessage) SetBody(body string) {
+func (message *HTTPMessage) SetBody(body string) error {
 	message.body = []byte(body)
 	message.eheaders["Content-Length"] = strconv.Itoa(len(body))
+	return nil
 }
 
 func (message HTTPMessage) SerializeHeaders() []byte {
@@ -147,7 +150,7 @@ func (message HTTPMessage) SerializeHeaders() []byte {
 func (message HTTPMessage) Serialize() []byte {
 	var serialized []byte
 
-	if message.direction == request {
+	if message.direction == DIRECTION_UPSTREAM {
 		serialized = []byte(fmt.Sprintf("%s %s %s%s", message.method, message.uri, message.version, CRLF_S))
 	} else {
 		message.eheaders["Content-Length"] = strconv.Itoa(len(message.body))
@@ -266,19 +269,20 @@ func httpParseHeaders(headers []byte, obj HTTPMessage) HTTPMessage {
 
 	data := strings.Split(string(headers), string(CRLF))
 
-	// parse starting line
-	starting_line := strings.Split(data[0], " ")
+	// parse the header line e.g. 'HTTP/1.1 405 Not Allowed'
+	// or 'POST / HTTP/1.1'
+	header := strings.Split(data[0], " ")
 
 	var requestLine = regexp.MustCompile(fmt.Sprintf("^%s", allowedMethodsRegex()))
 	var responseLine = regexp.MustCompile(fmt.Sprintf("^%s", httpVersionsRegex()))
 
 	if requestLine.MatchString(data[0]) {
-		direction = request
-		method, uri, version = starting_line[0], starting_line[1], strings.Join(starting_line[2:], " ")
+		direction = DIRECTION_UPSTREAM
+		method, uri, version = header[0], header[1], strings.Join(header[2:], " ")
 	} else if responseLine.MatchString(data[0]) {
-		httpCode, _ := strconv.Atoi(starting_line[1])
-		version, code, message = starting_line[0], httpCode, strings.Join(starting_line[2:], " ")
-		direction = response
+		httpCode, _ := strconv.Atoi(header[1])
+		version, code, message = header[0], httpCode, strings.Join(header[2:], " ")
+		direction = DIRECTION_DOWNSTREAM
 	}
 
 	// range data[1:] to omit the request line parsed above
