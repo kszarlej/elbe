@@ -19,7 +19,7 @@ var (
 
 type Upstream struct {
 	Hosts        []string
-	LoadBalancer *roundrobin
+	LoadBalancer *LoadBalancer
 }
 
 type Location struct {

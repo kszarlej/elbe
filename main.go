@@ -84,20 +84,21 @@ func proxy(client net.Conn, config *Config) {
 		return
 	}
 
-	// Get proxy host
+	// Get upstream name and loadbalancer which returns
+	// hosts to connect.
 	upstreamName := config.Get(loc, "proxy_pass")
-	upstreamHost := RoundRobinGetHost(upstreamName.(string))
+	loadBalancer := DynamicUpstreams[upstreamName.(string)].LoadBalancer
 
-	backend := initConnect(upstreamHost)
+	backend := initConnect(loadBalancer.GetHost())
 	defer backend.Close()
 
 	// Send request to upstream
-	write_timeout := config.Get(loc, "proxy_write_timeout").(time.Duration)
-	writeMessage(backend, write_timeout, request.Serialize())
+	writeTimeout := config.Get(loc, "proxy_write_timeout").(time.Duration)
+	writeMessage(backend, writeTimeout, request.Serialize())
 
 	// Read message from upstream
-	read_timeout := config.Get(loc, "proxy_read_timeout").(time.Duration)
-	response := httpReadMessage(backend, read_timeout)
+	readTimeout := config.Get(loc, "proxy_read_timeout").(time.Duration)
+	response := httpReadMessage(backend, readTimeout)
 
 	// if isTimeout(err) {
 	// 	client.Write(HTTP504(&httpRequestParsed))

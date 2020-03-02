@@ -6,17 +6,30 @@ import (
 
 var DynamicUpstreams map[string]Upstream
 
-type roundrobin struct {
+type LoadBalancer struct {
 	last int
 	max  int
 	loop *[]string
 }
 
-// Function which reads upstreams from config file
+// GetUpstream returns the next upstream from list of upstreams
+// in a LoadBalancer. Simple RoundRobin.
+func (lb *LoadBalancer) GetHost() string {
+	hostNum := lb.last + 1
+
+	if hostNum == lb.max {
+		hostNum = 0
+	}
+
+	lb.last = hostNum
+
+	return (*lb.loop)[hostNum]
+}
+
+
+// SetDynamicUpstreams is function which reads upstreams from config file
 // and sets DynamicUpstreams struct used by loadbalancer.
 func SetDynamicUpstreams(config *Config, init bool) {
-	//configUpstreams := config.Upstreams
-
 	for {
 		var upstreams = make(map[string]Upstream)
 
@@ -31,7 +44,7 @@ func SetDynamicUpstreams(config *Config, init bool) {
 			ups.Hosts = hosts
 
 			if DynamicUpstreams[upstreamName].LoadBalancer == nil {
-				var loadbalancer = roundrobin{last: 0, max: len(hosts), loop: &ups.Hosts}
+				var loadbalancer = LoadBalancer{last: 0, max: len(hosts), loop: &ups.Hosts}
 				ups.LoadBalancer = &loadbalancer // why this work
 				//DynamicUpstreams[upstreamName].LoadBalancer = &loadbalancer // and this doesn't?
 			} else {
@@ -50,18 +63,4 @@ func SetDynamicUpstreams(config *Config, init bool) {
 		}
 		time.Sleep(5 * time.Second)
 	}
-}
-
-func RoundRobinGetHost(upstreamName string) string {
-	ups := DynamicUpstreams[upstreamName]
-
-	hostNum := ups.LoadBalancer.last + 1
-
-	if hostNum == ups.LoadBalancer.max {
-		hostNum = 0
-	}
-
-	ups.LoadBalancer.last = hostNum
-
-	return ups.Hosts[hostNum]
 }
